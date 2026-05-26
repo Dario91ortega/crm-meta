@@ -205,15 +205,90 @@ solos cuando arranca el Docker daemon (que está habilitado al boot del sistema)
 - Timezone: Argentina (America/Argentina/Buenos_Aires)
 - Idioma de preferencia para conversación: **español**.
 
-## Convenciones de código
+## Convenciones del proyecto
 
-- Seguir estándares Laravel/PSR-12.
-- Filament Resources en `app/Filament/Resources/`.
-- Jobs en `app/Jobs/`.
-- Tests con Pest (Laravel 13 default).
-- Migraciones: usar tipos específicos (`json` para `field_data` de Meta, `uuid` para
-  IDs públicos si se necesitan más adelante).
-- Naming: snake_case en DB, camelCase en PHP, kebab-case en rutas/URLs.
+### Idioma
+- **Código, DB, modelos, variables, comments**: inglés. Simple y claro, prioridad
+  legibilidad sobre estilo.
+- **Commits, branches, PRs**: inglés.
+- **`README.md`**: inglés (público, portfolio-facing).
+- **`CLAUDE.md`** (este archivo): español (working doc personal de Dario).
+- **Conversación Claude ↔ Dario**: español.
+
+### Naming
+| Item | Convención | Ejemplo |
+|------|-----------|---------|
+| Tablas DB | snake_case plural | `leads`, `meta_forms` |
+| Columnas DB | snake_case | `first_name`, `captured_at` |
+| Foreign keys | `{singular}_id` | `contact_id`, `meta_form_id` |
+| Booleanos DB | prefix `is_` / `has_` | `is_processed`, `has_consent` |
+| Timestamps DB | suffix `_at` | `captured_at`, `contacted_at` |
+| Clases PHP | PascalCase | `Lead`, `ProcessMetaLead` |
+| Métodos | camelCase | `markAsContacted()` |
+| Constantes | SCREAMING_SNAKE_CASE | `MAX_RETRIES` |
+| Enums | PascalCase + cases PascalCase | `LeadStatus::Pending` |
+| Rutas | kebab-case | `/meta-webhooks/leads` |
+| Filament Resources | `{Model}Resource` | `LeadResource` |
+| Jobs | Verbo imperativo | `ProcessMetaLead` |
+| Services | `{Domain}Service` | `MetaGraphService` |
+| Form Requests | `{Verb}{Model}Request` | `StoreLeadRequest` |
+
+### Estructura de directorios extra (sobre Laravel default)
+```
+app/
+├── Actions/       # Operaciones puntuales (ej: ConvertLeadToContact)
+├── Enums/         # Enums tipados (LeadStatus, DealStage)
+├── Filament/      # Resources, Pages, Widgets
+├── Observers/     # Eloquent event observers (para activity log y side-effects)
+├── Services/      # Wrappers de APIs externas (MetaGraphService)
+└── Support/       # Helpers, traits, value objects
+```
+
+### Modelos
+- `$fillable` explícito (allowlist) — nunca `$guarded = []`.
+- Casts para `json`, `datetime`, `decimal`, enums.
+- PHPDoc a nivel clase explicando el rol del modelo y semántica de campos.
+- Relaciones con return type explícito: `public function contact(): BelongsTo`.
+- Scopes con prefijo `scope`: `scopeProcessed()`.
+
+### Migrations
+- Una migración por concepto (no mezclar tablas distintas).
+- FK explícita: `->foreignId('contact_id')->nullable()->constrained()->cascadeOnDelete()`.
+- Índices: `->index()` en FKs, `->unique()` en business keys (`meta_lead_id`).
+- `->comment()` solo cuando el campo es ambiguo **y** no hay enum.
+
+### Documentación
+- **Modelos** = source of truth para significado de campos (vía PHPDoc).
+- **Enums** = source of truth para valores finitos (mejor que strings + comments).
+- **DB column comments** = solo si el campo es ambiguo y no hay enum.
+- **Schema dump** (`database/schema/mysql-schema.sql`) regenerado tras cambios grandes
+  vía `php artisan schema:dump --prune` (fuente única para que Claude lea schema rápido).
+- **CLAUDE.md** = decisiones + estado (working doc).
+- **README.md** = onboarding público (inglés).
+
+### Validación
+- Form Requests para todo endpoint con input de usuario.
+- Webhooks: validar en Form Request, no inline en controller.
+
+### Testing
+- Pest (default Laravel 13).
+- Feature tests > Unit tests. Apuntar a comportamiento end-to-end.
+- Factories para todos los modelos.
+- DB SQLite `:memory:` para velocidad (default phpunit.xml).
+
+### Git
+- **Conventional Commits**: `feat:`, `fix:`, `chore:`, `refactor:`, `test:`, `docs:`.
+- Branch por feature: `feat/meta-webhook-endpoint`, `fix/duplicate-leads`.
+- Commits pequeños que cuenten una historia.
+- PRs aunque sea repo personal — práctica de portfolio.
+
+### Code style
+- Laravel Pint con preset `laravel`. Sin custom rules al inicio.
+
+### Comments en código
+- WHAT no se comenta (el nombre lo dice).
+- WHY sí (constraints no obvios, decisiones contraintuitivas).
+- PHPDoc en clases y métodos públicos. En privados solo si el nombre no es claro.
 
 ## Recordatorios para Claude
 
