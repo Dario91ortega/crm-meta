@@ -16,6 +16,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * The `phone` value is stored as written (E.164 normalisation happens in
  * the service layer when matching across leads, not at persistence time).
+ *
+ * @property int $id
+ * @property int $contact_id
+ * @property string $phone
+ * @property string|null $label
+ * @property bool $is_primary
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Contact|null $contact
+ * @method static \Database\Factories\ContactPhoneFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone whereContactId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone whereIsPrimary($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone whereLabel($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone wherePhone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ContactPhone whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 #[Fillable(['contact_id', 'phone', 'label', 'is_primary'])]
 class ContactPhone extends Model

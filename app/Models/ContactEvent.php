@@ -21,6 +21,34 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  *
  * agency_id is denormalised here (mirrors the parent Contact) to make
  * tenant filtering cheap without joining through contacts.
+ *
+ * @property int $id
+ * @property int $agency_id
+ * @property int $contact_id
+ * @property int|null $user_id
+ * @property string $eventable_type
+ * @property int $eventable_id
+ * @property \Illuminate\Support\Carbon|null $occurred_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Contact|null $contact
+ * @property-read Model|\Eloquent $eventable
+ * @property-read \App\Models\User|null $user
+ * @method static \Database\Factories\ContactEventFactory factory($count = null, $state = [])
+ * @method static Builder<static>|ContactEvent newModelQuery()
+ * @method static Builder<static>|ContactEvent newQuery()
+ * @method static Builder<static>|ContactEvent query()
+ * @method static Builder<static>|ContactEvent recent()
+ * @method static Builder<static>|ContactEvent whereAgencyId($value)
+ * @method static Builder<static>|ContactEvent whereContactId($value)
+ * @method static Builder<static>|ContactEvent whereCreatedAt($value)
+ * @method static Builder<static>|ContactEvent whereEventableId($value)
+ * @method static Builder<static>|ContactEvent whereEventableType($value)
+ * @method static Builder<static>|ContactEvent whereId($value)
+ * @method static Builder<static>|ContactEvent whereOccurredAt($value)
+ * @method static Builder<static>|ContactEvent whereUpdatedAt($value)
+ * @method static Builder<static>|ContactEvent whereUserId($value)
+ * @mixin \Eloquent
  */
 #[Fillable([
     'agency_id',

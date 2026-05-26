@@ -27,6 +27,44 @@ use Spatie\Activitylog\Support\LogOptions;
  * Background processing happens in App\Jobs\ProcessLead, dispatched by the
  * LeadObserver right after creation. Idempotency is enforced by the unique
  * index on (platform, platform_lead_id).
+ *
+ * @property int $id
+ * @property int $agency_id
+ * @property int|null $contact_id
+ * @property string $platform
+ * @property string $platform_lead_id
+ * @property string|null $form_id
+ * @property string|null $ad_id
+ * @property string|null $campaign_id
+ * @property array<array-key, mixed> $payload
+ * @property LeadStatus $status
+ * @property \Illuminate\Support\Carbon $captured_at
+ * @property \Illuminate\Support\Carbon|null $processed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Agency|null $agency
+ * @property-read \App\Models\Contact|null $contact
+ * @method static \Database\Factories\LeadFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereAdId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereAgencyId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereCampaignId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereCapturedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereContactId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereFormId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead wherePayload($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead wherePlatform($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead wherePlatformLeadId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereProcessedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Lead whereUpdatedAt($value)
+ * @mixin \Eloquent
  */
 #[Fillable([
     'agency_id',

@@ -28,6 +28,51 @@ use Spatie\Activitylog\Support\LogOptions;
  * Tenant scoping is automatic via BelongsToAgencyScope; bypass with
  * `Contact::withoutGlobalScope(BelongsToAgencyScope::class)` when working
  * across agencies (e.g. background jobs, super-admin).
+ *
+ * @property int $id
+ * @property int $agency_id
+ * @property int $user_id
+ * @property string|null $first_name
+ * @property string|null $last_name
+ * @property string|null $avatar
+ * @property int|null $contact_phone_id
+ * @property int|null $contact_email_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\Activitylog\Models\Activity> $activitiesAsSubject
+ * @property-read int|null $activities_as_subject_count
+ * @property-read \App\Models\Agency|null $agency
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ContactEmail> $emails
+ * @property-read int|null $emails_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ContactEvent> $events
+ * @property-read int|null $events_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Lead> $leads
+ * @property-read int|null $leads_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ContactPhone> $phones
+ * @property-read int|null $phones_count
+ * @property-read \App\Models\ContactEmail|null $primaryEmail
+ * @property-read \App\Models\ContactPhone|null $primaryPhone
+ * @property-read \App\Models\User $user
+ * @method static \Database\Factories\ContactFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereAgencyId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereAvatar($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereContactEmailId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereContactPhoneId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereDeletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereFirstName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereLastName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Contact withoutTrashed()
+ * @mixin \Eloquent
  */
 #[Fillable([
     'agency_id',
