@@ -102,6 +102,20 @@ class Lead extends Model
         'status' => LeadStatus::Pending->value,
     ];
 
+    /**
+     * Auto-fill agency_id from the authenticated user when omitted on create.
+     * Webhook-originated leads always set agency_id explicitly; this hook
+     * only matters for leads created from inside the admin panel.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $lead): void {
+            if ($lead->agency_id === null && auth()->check()) {
+                $lead->agency_id = auth()->user()->agency_id;
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

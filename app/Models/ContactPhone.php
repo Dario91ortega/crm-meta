@@ -14,8 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * One contact may have many phones; one of them is marked as primary and
  * referenced from contacts.contact_phone_id for quick access.
  *
- * The `phone` value is stored as written (E.164 normalisation happens in
- * the service layer when matching across leads, not at persistence time).
+ * The `phone` column is `unsignedBigInteger`: only digits, no `+`, no
+ * formatting. Callers must strip non-digits before persisting or matching
+ * (LeadContactResolver does this when processing inbound webhook payloads).
  *
  * @property int $id
  * @property int $contact_id
@@ -51,6 +52,7 @@ class ContactPhone extends Model
     {
         return [
             'is_primary' => 'boolean',
+            'phone' => 'integer',
         ];
     }
 

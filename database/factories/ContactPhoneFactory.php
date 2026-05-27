@@ -17,7 +17,7 @@ class ContactPhoneFactory extends Factory
     {
         return [
             'contact_id' => Contact::factory(),
-            'phone' => fake()->e164PhoneNumber(),
+            'phone' => (int) fake()->numerify('5#############'),
             'label' => fake()->randomElement(['mobile', 'home', 'work']),
             'is_primary' => false,
         ];

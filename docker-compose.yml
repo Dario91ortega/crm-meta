@@ -22,6 +22,9 @@ services:
         UID: ${UID:-1000}
         GID: ${GID:-1000}
     container_name: crm_app
+    ports:
+      # Vite dev server (HMR) — only consumed during `npm run dev`.
+      - "${FORWARD_VITE_PORT:-5173}:5173"
     volumes:
       - ./:/var/www/html:cached
     depends_on:

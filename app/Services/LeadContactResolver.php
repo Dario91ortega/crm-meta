@@ -30,7 +30,7 @@ class LeadContactResolver
     {
         $payload = $lead->payload ?? [];
         $email = isset($payload['email']) ? mb_strtolower(trim((string) $payload['email'])) : null;
-        $phone = isset($payload['phone']) ? trim((string) $payload['phone']) : null;
+        $phone = $this->normalizePhone($payload['phone'] ?? null);
 
         if (! $email && ! $phone) {
             return null;
@@ -41,7 +41,23 @@ class LeadContactResolver
         return $existing ?? $this->createContact($lead, $email, $phone);
     }
 
-    protected function findExisting(int $agencyId, ?string $email, ?string $phone): ?Contact
+    /**
+     * Strip every non-digit and cast to int for storage as unsignedBigInteger.
+     * Returns null when the result has zero digits — caller treats that the
+     * same as a missing phone.
+     */
+    protected function normalizePhone(mixed $raw): ?int
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', (string) $raw);
+
+        return $digits !== '' ? (int) $digits : null;
+    }
+
+    protected function findExisting(int $agencyId, ?string $email, ?int $phone): ?Contact
     {
         $query = Contact::query()
             ->withoutGlobalScope(BelongsToAgencyScope::class)
@@ -66,7 +82,7 @@ class LeadContactResolver
         return null;
     }
 
-    protected function createContact(Lead $lead, ?string $email, ?string $phone): Contact
+    protected function createContact(Lead $lead, ?string $email, ?int $phone): Contact
     {
         $payload = $lead->payload ?? [];
 

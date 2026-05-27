@@ -89,6 +89,20 @@ class Contact extends Model
     /** @use HasFactory<ContactFactory> */
     use HasFactory, LogsActivity, SoftDeletes;
 
+    /**
+     * Auto-fill agency_id from the authenticated user when omitted on create.
+     * Super-admins (no agency_id of their own) must pick an agency explicitly
+     * in the form; the form layer surfaces the Select only for them.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $contact): void {
+            if ($contact->agency_id === null && auth()->check()) {
+                $contact->agency_id = auth()->user()->agency_id;
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
