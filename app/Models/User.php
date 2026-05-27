@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -101,7 +102,7 @@ use Spatie\Permission\Traits\HasRoles;
     'last_login_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
@@ -163,5 +164,24 @@ class User extends Authenticatable implements FilamentUser
         }
 
         return $this->is_active && $this->isApproved();
+    }
+
+    /**
+     * Avatar shown by Filament in the top-right account menu. Falls back to
+     * a ui-avatars.com-generated placeholder so the menu never renders blank.
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        if (filled($this->avatar)) {
+            return $this->avatar;
+        }
+
+        $label = trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
+
+        if ($label === '') {
+            $label = $this->email ?? '?';
+        }
+
+        return 'https://ui-avatars.com/api/?name='.urlencode($label).'&background=0D8ABC&color=fff';
     }
 }

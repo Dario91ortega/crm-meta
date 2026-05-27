@@ -9,6 +9,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -21,6 +22,13 @@ class ContactsTable
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
+                ImageColumn::make('avatar')
+                    ->label('')
+                    ->circular()
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name='
+                        .urlencode(trim(($record->first_name ?? '').' '.($record->last_name ?? '')) ?: '?')
+                        .'&background=14B8A6&color=fff'),
+
                 TextColumn::make('first_name')
                     ->searchable()
                     ->sortable(),

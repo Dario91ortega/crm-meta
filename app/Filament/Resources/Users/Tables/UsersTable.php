@@ -7,6 +7,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -20,6 +21,13 @@ class UsersTable
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
+                ImageColumn::make('avatar')
+                    ->label('')
+                    ->circular()
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name='
+                        .urlencode(trim(($record->first_name ?? '').' '.($record->last_name ?? '')) ?: ($record->email ?? '?'))
+                        .'&background=0D8ABC&color=fff'),
+
                 TextColumn::make('first_name')
                     ->searchable()
                     ->sortable(),

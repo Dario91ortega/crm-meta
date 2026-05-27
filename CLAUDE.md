@@ -136,12 +136,11 @@ Ver `.env.example`. Lo importante:
 
 ## URL local
 
-App accesible en `http://crm-meta.localhost` (configurado en `APP_URL` del `.env`).
-
-**No requiere `/etc/hosts`**: el TLD `.localhost` está reservado por RFC 6761 para
-resolverse a `127.0.0.1` automáticamente. Glibc NSS y systemd-resolved (en Linux moderno)
-y los browsers más comunes lo respetan. Elegido por sobre `.local` porque `.local` está
-reservado para mDNS (RFC 6762) y puede comportarse de forma inconsistente.
+`APP_URL=http://localhost` (canónica). Cambiada desde `crm-meta.localhost` porque
+**Google OAuth no acepta subdominios `*.localhost`** — solo `localhost` literal o TLDs
+públicos. Nginx tiene `server_name _;` así que el container responde a cualquier host
+en :80, así que `http://crm-meta.localhost` también funciona pero los links generados
+por Laravel (redirects, emails) usan `localhost`.
 
 Como nginx escucha en puerto 80 del host, **solo un proyecto a la vez puede correr
 en :80**. Si tenés otro proyecto Docker que usa :80 (ej. dropsync), `docker compose stop`
@@ -150,42 +149,89 @@ ese antes de levantar este.
 Auto-start: los containers tienen `restart: unless-stopped`, así que se levantan
 solos cuando arranca el Docker daemon (que está habilitado al boot del sistema).
 
+### Hot reload (Vite dev server)
+
+Para que las ediciones a Blade / theme.css se reflejen sin rebuildear:
+
+```bash
+docker compose exec app npm run dev   # dejá esto corriendo en una terminal
+```
+
+Vite escucha en :5173 (puerto expuesto en `docker-compose.yml`). El archivo
+`public/hot` le indica a Laravel que sirva los assets desde Vite en lugar del build
+estático.
+
 ## Roadmap
 
-### Hecho
-- [x] Estructura Docker (Dockerfile multi-stage, compose, configs nginx/php)
-- [x] `.env.example`, `.gitignore`, `.dockerignore`
-- [x] `README.md` con instrucciones bootstrap
-- [x] `CLAUDE.md` (este archivo)
-- [x] Scaffold Laravel 13 (`composer create-project`)
-- [x] APP_KEY + migrations iniciales contra MySQL
-- [x] Filament 5 instalado + panel `/admin` scaffoldeado
-- [x] Assets compilados (Vite)
-- [x] Stack levantado y respondiendo HTTP 200 en `/` y `/admin/login`
+### Hecho (consolidado al 2026-05-27)
 
-### Siguiente
-- [ ] Crear primer usuario admin: `docker compose exec app php artisan make:filament-user`
-  (es interactivo: pide name/email/password)
-- [ ] Modelo `Lead` con migración (incluir column JSON para `field_data` de Meta)
+**Infra y framework:**
+- [x] Docker multi-stage (base/dev/build/prod) + Compose
+- [x] Laravel 13 + Filament 5 + PHP 8.4 + MySQL 8 + Redis 7
+- [x] Spatie Permission (roles admin/manager/sales) + Activity Log
+- [x] IDE Helper (docblocks auto-gen) + schema dump consolidado
+- [x] Filament theme custom (`resources/css/filament/admin/theme.css`) — escanea
+      `app/Filament/**` y `resources/views/filament/**` con `@source`
+- [x] Vite HMR para Docker (puerto 5173, `hmr.host=localhost`)
+- [x] Top navigation en admin panel
+- [x] `APP_URL=http://localhost` (Google OAuth lo exige; ver "URL local")
+
+**Dominio (CRM core):**
+- [x] Migrations: agencies, users (extended), contacts, contact_phones (BIGINT phone),
+      contact_emails, leads, contact_events (polymorphic), notes
+- [x] Modelos: Agency, User, Contact, ContactPhone, ContactEmail, Lead, ContactEvent, Note
+- [x] Enum `LeadStatus` (Pending/Processing/Processed/Failed/Skipped)
+- [x] `BelongsToAgencyScope` global scope en Contact/Lead/ContactEvent (skip si super-admin)
+- [x] Hook `creating` en Contact + Lead → auto-fill `agency_id` desde user autenticado
+- [x] `LeadContactResolver` service: find-or-create por email/phone normalizado (digits-only),
+      scoped por agency
+- [x] `ProcessLead` job (queue) + `LeadObserver` dispatch on creating (afterCommit)
+
+**Admin panel (Filament Resources):**
+- [x] AgencyResource (super-admin only) — name, slug auto-gen, counts de users/contacts/leads
+- [x] UserResource (admin/manager) — Approve action inline, role badges, avatar circular
+- [x] ContactResource — Phones/Emails/Events RelationManagers
+- [x] ViewContact custom page: tarjeta info izquierda, textarea+timeline derecha
+      (`resources/views/filament/resources/contacts/pages/view-contact.blade.php`)
+- [x] LeadResource — campos read-only (datos vienen de webhook), status badge con colores,
+      Select para link manual al contact
+- [x] `agency_id` field en form: Select visible solo para super-admin; el resto lo
+      autocompleta el creating hook
+- [x] Avatar columns como `ImageColumn::circular()` con fallback a ui-avatars.com
+
+**Auth:**
+- [x] Laravel Socialite + dutchcodingcompany/filament-socialite
+- [x] Botón "Continue with Google" en `/admin/login`
+- [x] Provider en **stateless mode** (Google valida; bypassea problemas de session/cookie
+      cuando el redirect cruza dominios)
+- [x] Google OAuth credentials en `.env` (NUNCA en `.env.example`)
+- [x] Redirect URI registrado: `http://localhost/admin/oauth/callback/google`
+- [x] `createUserUsing` callback: nuevos users → pending (agency_id null, approved_at null)
+- [x] `User` implementa `FilamentUser` (gating canAccessPanel: super-admin OR active+approved)
+      y `HasAvatar` (avatar en top-right menu)
+
+### Pendiente
+
 - [ ] Endpoint webhook `/webhooks/meta/leads`:
-  - GET para verificación inicial (`hub.challenge`)
-  - POST con validación de firma `X-Hub-Signature-256` (HMAC-SHA256 con App Secret)
+  - GET verification con `hub.challenge`
+  - POST con validación HMAC-SHA256 (`X-Hub-Signature-256`) usando META_APP_SECRET
   - Responder 200 < 5s, despachar Job para fetch real
-- [ ] Job `ProcessMetaLead`:
-  - Recibe `leadgen_id` + `form_id` + `page_id`
-  - GET a `https://graph.facebook.com/v19.0/{leadgen_id}?access_token=...`
-  - Mapear `field_data` → tabla `leads`
-  - Idempotencia: índice único sobre `leadgen_id`
-- [ ] Service para Page Access Token de larga duración (System User token en Meta Business)
-- [ ] Filament Resource para `Lead`:
-  - Form, table, filtros por form_id / campaign / estado
-  - Pipeline kanban (plugin de Filament o custom)
-  - Asignación a vendedor (relación con `User`)
-  - Actions: marcar contactado, cerrar ganado/perdido
-- [ ] Roles + permisos (Spatie Permission): admin, vendedor, manager
-- [ ] Activity log (Spatie) para auditoría de cambios en leads
-- [ ] `docker-compose.prod.yml` con target `prod` para Coolify
-- [ ] Service `queue` dedicado en compose cuando se active flujo Meta real
+- [ ] Job `ProcessMetaLead` (distinto de `ProcessLead`, este es el que hace GET a Graph API)
+- [ ] `MetaGraphService` para wrap del Graph API + Page Access Token de larga duración
+- [ ] Filament Policies por Resource (lock down create/delete según rol; hoy solo
+      navegación está restringida)
+- [ ] Filament Tenancy formal (`->tenant(Agency::class)`) — hoy el aislamiento es por
+      Global Scope, funciona pero la integración Filament-nativa sería más limpia
+- [ ] `docker-compose.prod.yml` + service `queue_worker` dedicado para Coolify deploy
+- [ ] Filament Widgets / Dashboard stats (leads esta semana, contactos nuevos, etc.)
+- [ ] Pest feature tests del flujo lead → contact (al menos 4: e2e, dedup, cross-tenant
+      isolation, skipped on empty payload)
+- [ ] Login agency-scoped: ruta `/agencies/{slug}/login` que prefilla `agency_id`
+
+### Sin commitear (working tree al cerrar la sesión 2026-05-27)
+
+- ImageColumn de avatar + HasAvatar en User (UsersTable, ContactsTable, User model)
+- Sugerencia de mensaje: `feat: render user and contact avatars as circular images`
 
 ## Deploy en Coolify
 
@@ -292,10 +338,62 @@ app/
 
 ## Recordatorios para Claude
 
-- **No agregar Docker workspace container**: decisión deliberada, ya documentada.
-- **No agregar queue worker antes del primer webhook real**: YAGNI.
+### Reglas duras
+
+- **Git**: nunca ejecutar `git commit` o `git push` sin pedido explícito. Dario lo
+  maneja a mano. Hacer el trabajo de archivos y decir "listo para commit". (Ver memoria
+  `feedback-git-manual`.)
+- **`.env.example`**: jamás escribir valores reales ahí — solo placeholders. Las
+  credenciales (Google OAuth, META_APP_SECRET, etc.) van en `.env` (gitignored).
+- **No agregar Docker workspace container**: decisión deliberada, multi-stage lo cubre.
+- **No agregar queue worker dedicado antes del primer webhook real**: YAGNI.
 - **No agregar mailpit / scheduler / debug bar** sin pedido explícito: scope creep.
-- **Verificar versiones actuales** antes de pinear (Laravel 13 / Filament 5 al momento
-  de escribir esto, pero conviene re-verificar en sesiones nuevas).
 - **Este proyecto es portfolio**: cada decisión técnica debe poder explicarse en
   entrevista. Si algo no se justifica, mejor no lo agregues.
+
+### Gotchas aprendidos (no repetir)
+
+1. **Spatie ActivityLog v5 cambió namespaces**:
+   - Trait: `Spatie\Activitylog\Models\Concerns\LogsActivity` (NO `Traits\`)
+   - LogOptions: `Spatie\Activitylog\Support\LogOptions` (NO root del namespace)
+
+2. **`contact_phones.phone` es `unsignedBigInteger`** (decisión explícita del user).
+   Cualquier código que reciba phones de afuera (webhooks, formularios externos) debe
+   `preg_replace('/\D/', '', $raw)` y castear a `int` antes de guardar/buscar.
+   `LeadContactResolver::normalizePhone()` lo hace ya para el flujo de leads.
+
+3. **Google OAuth rechaza `*.localhost`** subdominios. Solo acepta `localhost` literal
+   o TLDs públicos. Por eso `APP_URL=http://localhost` y NO `crm-meta.localhost`.
+
+4. **Filament 5 estructura nueva**: `Resources/{Model}/{Pages,Schemas,Tables,RelationManagers}/`.
+   Las clases form/table viven en archivos separados (`{Model}Form`, `{Model}sTable`). El
+   Resource main solo delega.
+
+5. **CSS de Filament es pre-compilado**: clases Tailwind custom en views propias NO se
+   ven a menos que crees un theme custom y rebuildées con `npm run build`. El theme está
+   en `resources/css/filament/admin/theme.css` con directivas `@source` que escanean
+   `app/Filament/**` y `resources/views/filament/**`.
+
+6. **Filament 5: `Hidden::make` + `default()` con `auth()->user()->agency_id`** se rellena
+   con NULL si el user es super-admin (no tiene agency). Bug clásico. Solución que
+   aplicamos: `Select::make('agency_id')->visible(super-admin only)` + `creating` hook
+   en el modelo que rellena para users regulares.
+
+7. **OAuth provider stateless**: si dejás `->stateless(false)`, el redirect Google→callback
+   puede perder la session cookie y tirar `InvalidStateException`. Stateless OK porque
+   Google igual valida el `code` con el `client_secret`.
+
+8. **Avatar de Google es de 1000+ chars**. `users.avatar` y `contacts.avatar` están en
+   `TEXT`, no `VARCHAR(255)`.
+
+9. **`->topNavigation()` en Filament 5** convierte navigation groups en dropdowns en la
+   top bar. Si querés volver al sidebar, comentá esa línea en `AdminPanelProvider`.
+
+10. **`name` column en `users`**: se mantiene por compatibilidad con `make:filament-user`,
+    se sincroniza desde `first_name + last_name` en un saving hook del User model.
+
+### Cuándo cuestionar al user
+
+- Si pide una migración destructiva (drop column, type change con riesgo de pérdida),
+  preguntar primero.
+- Si pide algo que toca `.env` o credenciales, verificar que vaya en `.env` no en `.env.example`.
