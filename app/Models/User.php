@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -99,7 +101,7 @@ use Spatie\Permission\Traits\HasRoles;
     'last_login_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
@@ -148,5 +150,18 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->hasRole('admin') && $this->agency_id === null;
+    }
+
+    /**
+     * Gate panel access. Super-admins always pass; everyone else must be
+     * active AND approved AND assigned to an agency.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->is_active && $this->isApproved();
     }
 }
